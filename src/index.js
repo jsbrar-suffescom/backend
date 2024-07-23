@@ -43,18 +43,27 @@ io.on('connection', (socket) => {
     console.log(`${userId} joined room ${roomId}`);
   });
 
-  socket.on('sendMessage', async ({ roomId, userId, content, isImage }) => {
+  socket.on('sendMessage', async ({ roomId, userId, content, isImage, fullName }) => {
 
-    console.log("CONTENT ::>>>> ", content )
+    console.log("CONTENT ::>>>> ", fullName)
     if (isImage) {
       const newMessage = new Message({ sender: new mongoose.Types.ObjectId(userId), imageUrl: content, chatRoomId: new mongoose.Types.ObjectId(roomId), isImage });
       await newMessage.save();
-      io.to(roomId).emit('receiveMessage', newMessage);
+      const messageWithFullName = {
+        ...newMessage.toObject(),
+        fullName
+    };
+
+      io.to(roomId).emit('receiveMessage', messageWithFullName);
     }
     else {
       const newMessage = new Message({ sender: new mongoose.Types.ObjectId(userId), content: content, chatRoomId: new mongoose.Types.ObjectId(roomId), isImage });
       await newMessage.save();
-      io.to(roomId).emit('receiveMessage', newMessage);
+      const messageWithFullName = {
+        ...newMessage.toObject(),
+        fullName 
+      };
+      io.to(roomId).emit('receiveMessage', messageWithFullName);
     }
 
 

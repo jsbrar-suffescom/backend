@@ -14,6 +14,14 @@ const chatRoomSchema = new Schema({
         ref: 'User',
         required: true
     }],
+    groupName : {
+        type : String,
+    },
+    createdBy : {
+        type : Schema.Types.ObjectId,
+        ref : 'User',
+        required : true
+    }
 }, { timestamps: true });
 
 export const ChatRoom = mongoose.model('ChatRoom', chatRoomSchema);

@@ -7,6 +7,7 @@ import { ApiError } from "../utils/ApiError.js";
 
 import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
+import { User } from "../models/users.model.js";
 
 // Create a new chat room
 const createChatRoom = async (req, res) => {
@@ -39,7 +40,7 @@ const createChatRoom = async (req, res) => {
 
         const name = nanoid();
 
-        const chatRoom = new ChatRoom({ name, members: [userId, receiverId] });
+        const chatRoom = new ChatRoom({ name, members: [userId, receiverId], createdBy : userId });
         await chatRoom.save();
 
         if (chatRoom) {
@@ -66,34 +67,116 @@ const createChatRoom = async (req, res) => {
 }
 
 
+const createGroupChatRoom = async (req, res) => {
+
+    const {userId, membersIds, groupName } = req.body;
+        
+    console.log("USER ID ", userId, "Mids", membersIds, "groupName", groupName)
+
+    try {
+        if (!userId || !membersIds || !groupName) {
+            return res.status(400).send({
+                message: "Group Name, Memebrs, and User all are required",
+                success: false
+            })
+        }
+
+    
+        const name = nanoid();
+        const members = membersIds
+        members.push(userId)
+
+        const chatRoom = new ChatRoom({ name, members, isGroup : true,  createdBy : userId, groupName });
+        await chatRoom.save();
+
+        if (chatRoom) {
+            return res.status(201).send({
+                data: chatRoom,
+                message: "successfully created chat room",
+                success: true
+            })
+
+        }
+        else {
+            return res.status(400).send({
+                message: "failed to create chat room",
+                success: true
+            })
+        }
+    } catch (error) {
+        console.log(error)
+        return res.status(500).send({
+            message: "internal server error",
+            success: false
+        })
+    }
+
+
+}
+
 
 // Get all chat rooms
+
 const getChatRoom = async (req, res) => {
-    const {userId} =  req.params
-   
-    const chatRooms = await ChatRoom.find({ members: { $in: [userId] } });
+    const { userId } = req.params;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
     try {
+        
+        const chatRooms = await ChatRoom.aggregate([
+            { $match: { members: { $in: [userObjectId] } } },
+            {
+                $addFields: {
+                    otherMembers: {
+                        $filter: {
+                            input: '$members',
+                            as: 'member',
+                            cond: { $ne: ['$$member', userObjectId] }
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: 'users', // name of the User collection
+                    localField: 'otherMembers',
+                    foreignField: '_id',
+                    as: 'otherMemberDetails'
+                }
+            },
+            {
+                $project: {
+                    isGroup: 1,
+                    members: 1,
+                    otherMemberDetails: 1,
+                    groupName : 1,
+                    name : 1
+                }
+            }
+        ]);
+
         if (chatRooms.length > 0) {
             return res.status(200).send({
                 data: chatRooms,
                 message: "Chat Rooms Found",
                 success: true
-            })
-        }
-        else {
+            });
+        } else {
             return res.status(404).send({
                 message: "Chat Rooms Not Found",
                 success: false
-            })
+            });
         }
     } catch (error) {
-        console.log("ERROR WHILE FETCHING CHAT ROOMS : ", error)
-        return res.send(500).send({
+        console.log("ERROR WHILE FETCHING CHAT ROOMS : ", error);
+        return res.status(500).send({
             message: "Internal Server Error",
             success: false
-        })
+        });
     }
 }
+
+
 
 
 
@@ -103,8 +186,25 @@ const getChatRoomMessages = async (req, res) => {
 
 
    
-    const messages = await Message.find({ chatRoomId : new mongoose.Types.ObjectId(chatRoomId) }).populate('sender').sort('timestamp');
-
+    const messages = await Message.aggregate([
+        {
+          $match: { chatRoomId: new mongoose.Types.ObjectId(chatRoomId) }
+        },
+        {
+          $lookup: {
+            from: 'users', // The collection to join with
+            localField: 'sender', // The field from the messages collection
+            foreignField: '_id', // The field from the users collection
+            as: 'senderDetails' // The name of the array to store the joined documents
+          }
+        },
+        {
+          $unwind: '$senderDetails' // Deconstruct the array created by $lookup
+        },
+        {
+          $sort: { timestamp: 1 } // Sort by timestamp in ascending order
+        }
+      ]);
     if (messages.length > 0) {
         return res.status(200).send({
             data: messages,
@@ -140,4 +240,4 @@ const sendImage = async (req, res) => {
 }
 
 
-export { createChatRoom, getChatRoom, getChatRoomMessages, sendImage }
+export { createChatRoom, getChatRoom, getChatRoomMessages, sendImage, createGroupChatRoom }

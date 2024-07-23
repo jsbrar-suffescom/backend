@@ -116,6 +116,16 @@ const loginUser = asyncHandler(async (req, res) => {
 
 })
 
+// GET USER DETAILS 
+
+const getUserDetails = (req, res) => {
+    return res.status(200).send({
+        data : req.user,
+        message : "successfully fetched user details",
+        success : true
+    })
+}
+
 // GET ALL THE USERS 
 
 const getAllUsers = async (req, res) => {
@@ -177,4 +187,4 @@ const setSocketId = async (req, res) => {
 
 
 
-export { registerUser, loginUser, getAllUsers, setSocketId }
+export { registerUser, loginUser, getAllUsers, setSocketId, getUserDetails }
