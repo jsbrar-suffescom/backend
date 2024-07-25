@@ -2,12 +2,8 @@
 import { nanoid } from "nanoid";
 import { ChatRoom } from "../models/chats.model.js";
 import { Message } from "../models/message.model.js";
-import { ApiError } from "../utils/ApiError.js";
-
-
-import { ApiResponse } from "../utils/ApiResponse.js";
 import mongoose from "mongoose";
-import { User } from "../models/users.model.js";
+
 
 // Create a new chat room
 const createChatRoom = async (req, res) => {
@@ -122,7 +118,6 @@ const getChatRoom = async (req, res) => {
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
     try {
-        
         const chatRooms = await ChatRoom.aggregate([
             { $match: { members: { $in: [userObjectId] } } },
             {
@@ -145,12 +140,44 @@ const getChatRoom = async (req, res) => {
                 }
             },
             {
+                $lookup: {
+                    from: 'messages',
+                    localField: '_id', // Assuming chat rooms have _id that matches messages' chatRoomId
+                    foreignField: 'chatRoomId', // The field in messages that refers to chatRoom
+                    as: 'messageDetails'
+                }
+            },
+            {
+                $addFields: {
+                    messageCount: { $size: '$messageDetails' } // Count the number of messages
+                }
+            },
+            {
+                $lookup: {
+                    from: 'messages',
+                    localField: 'latestMessage',
+                    foreignField: '_id',
+                    as: 'latestMessageDetail'
+                }
+            },
+            {
+                $unwind: {
+                    path: "$latestMessageDetail",
+                    preserveNullAndEmptyArrays: true // To handle chat rooms without a latest message
+                }
+            },
+            { $sort: { updatedAt: -1 } },
+            {
                 $project: {
                     isGroup: 1,
                     members: 1,
                     otherMemberDetails: 1,
-                    groupName : 1,
-                    name : 1
+                    groupName: 1,
+                    name: 1, 
+                    latestMessage: 1,
+                    updatedAt: 1,
+                    latestMessageDetail: 1,
+                    messageCount: 1 // Include the message count in the result
                 }
             }
         ]);

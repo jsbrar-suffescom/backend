@@ -23,6 +23,7 @@ app.use(cookieParser())
 //routes import
 import userRouter from './routes/users.route.js'
 import chatRoomRouter from './routes/chatRoom.route.js'
+import friendRequestRouter from './routes/friendRequest.route.js'
 
 
 
@@ -30,6 +31,7 @@ import chatRoomRouter from './routes/chatRoom.route.js'
 
 app.use("/api/v1/users", userRouter)
 app.use("/api/v1/chatRoom", chatRoomRouter)
+app.use("/api/v1/friendRequest", friendRequestRouter)
 
 
 

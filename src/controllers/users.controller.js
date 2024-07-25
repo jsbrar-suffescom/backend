@@ -128,17 +128,70 @@ const getUserDetails = (req, res) => {
 
 // GET ALL THE USERS 
 
-const getAllUsers = async (req, res) => {
+const getUsersBySearch = async (req, res) => {
+    const { searchValue } = req.query;
+    const userId = new mongoose.Types.ObjectId(req.user._id);
+
+    if (!searchValue) {
+        return res.status(200).send({
+            data: []
+        });
+    }
+
     try {
-        const users = await User.find({ _id: { $ne: req.user.id } });
-        return res.status(201).json(
-            new ApiResponse(200, users, "All Users Fetched Successfully")
-        )
-    } catch (err) {
-        console.log(err)
-        res.status(500).json({ message: 'Server error' });
+        const data = await User.aggregate([
+            {
+                $match: {
+                    username: { $regex: new RegExp(searchValue, 'i') },
+                    _id: { $ne: userId }  // Exclude the current user's details
+                }
+            },
+            {
+                $addFields: {
+                    isFriends: {
+                        $cond: {
+                            if: {
+                                $in: [userId, "$friends"]
+                            },
+                            then: true,
+                            else: false
+                        }
+                    },
+                    isFriendRequestSent: {
+                        $cond: {
+                            if: {
+                                $eq: [{ $size: "$friendRequestsReceived" }, 0]
+                            },
+                            then: false,
+                            else: {
+                                $cond: {
+                                    if: {
+                                        $in: [userId, "$friendRequestsReceived"]
+                                    },
+                                    then: true,
+                                    else: false
+                                }
+                            }
+                        }
+                    }
+                    
+                }
+            }
+        ]);
+
+        console.log("DATA ???????????", data)
+        
+
+        res.status(200).send({
+            data: data
+        });
+    } catch (error) {
+        console.log("ERROR :: ", error)
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
 
 
 // STORE SOCKET ID 
@@ -187,4 +240,4 @@ const setSocketId = async (req, res) => {
 
 
 
-export { registerUser, loginUser, getAllUsers, setSocketId, getUserDetails }
+export { registerUser, loginUser, getUsersBySearch, setSocketId, getUserDetails }

@@ -6,10 +6,6 @@ import { createChatRoom, createGroupChatRoom, getChatRoom, getChatRoomMessages, 
 
 const router = Router()
 
-// MESSAGES ROUTES
-// router.route("/getAllMessages/:userId/:receiverId").get(verifyJWT, getAllMessages)
-
-// router.route("/getUserByLastMessage/:stringId").get(getUserByLastMessage)
 
 // CREATE CHAT ROOM
 router.route("/createChatRoom").post(verifyJWT, createChatRoom)
