@@ -47,7 +47,8 @@ io.on('connection', (socket) => {
 
     console.log("CONTENT ::>>>> ", fullName)
     if (isImage) {
-      const newMessage = new Message({ sender: new mongoose.Types.ObjectId(userId), imageUrl: content, chatRoomId: new mongoose.Types.ObjectId(roomId), isImage });
+      try {
+        const newMessage = new Message({ sender: new mongoose.Types.ObjectId(userId), imageUrl: content, chatRoomId: new mongoose.Types.ObjectId(roomId), isImage });
       await newMessage.save();
 
       const data = await Message.findOneAndUpdate({ _id: roomId }, { latestMessage: newMessage._id }, { new: true })
@@ -58,10 +59,16 @@ io.on('connection', (socket) => {
       };
 
       io.to(roomId).emit('receiveMessage', messageWithFullName);
+      } catch (error) {
+        console.log("Error : ", error)
+      }
     }
     else {
       const newMessage = new Message({ sender: new mongoose.Types.ObjectId(userId), content: content.trim(), chatRoomId: new mongoose.Types.ObjectId(roomId), isImage });
       await newMessage.save();
+
+
+
       const data = await ChatRoom.findOneAndUpdate({ _id: roomId }, { latestMessage: newMessage._id }, { new: true })
       console.log("DATA", data)
       const messageWithFullName = {
