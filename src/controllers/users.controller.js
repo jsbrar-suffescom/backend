@@ -229,15 +229,4 @@ const setSocketId = async (req, res) => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 export { registerUser, loginUser, getUsersBySearch, setSocketId, getUserDetails }

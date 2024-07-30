@@ -62,7 +62,7 @@ const createChatRoom = async (req, res) => {
     }
 }
 
-
+// FOR CREATING GROUP CHAT
 const createGroupChatRoom = async (req, res) => {
 
     const {userId, membersIds, groupName } = req.body;
@@ -111,7 +111,7 @@ const createGroupChatRoom = async (req, res) => {
 }
 
 
-// Get all chat rooms
+// GET ALL CHAT ROOMS
 
 const getChatRoom = async (req, res) => {
     const { userId } = req.params;
@@ -207,7 +207,7 @@ const getChatRoom = async (req, res) => {
 
 
 
-// Get messages in a chat room
+// GET MESSAGES IN CHAT ROOM
 const getChatRoomMessages = async (req, res) => {
     const { chatRoomId } = req.params;
 
